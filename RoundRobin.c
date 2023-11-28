@@ -46,15 +46,18 @@ O que precisamos fazer?
 #include <stdlib.h>
 #include <stdbool.h>
 int QUANTUM =  2;
-int qtdProcessos = 100;
+int qtdProcessos = 10;
 
 struct Processos {
     int tempoDeServico;
     int contadorDeTempoAtivo;
     int pid;
     int prioridade;
-    char status[20]; // pronto, suspenso, bloqueado
-    int quantidadeDeIO;
+    int status; // 0 = pronto, 1 =  suspenso,2 = bloqueado
+    int fazIO;
+    int tempoDeServicoDeIO;
+    int contadorDeTempoAtivoEmIO;
+    int tipoDeIo; //0 - nao tem. 1 Fita, 2 Impressora, 3 Disco
 };
 
 struct Processos* criaProcesso() {
@@ -69,8 +72,20 @@ struct Processos* criaProcesso() {
     novoProcesso->contadorDeTempoAtivo = 0;
     novoProcesso->pid = rand() % (80 - 0 + 1) + 1;
     novoProcesso->prioridade = rand() % (5 - 1 + 1) + 1;
-    strcpy(novoProcesso->status, "pronto");
-    novoProcesso->quantidadeDeIO = rand() % (3 - 0);
+    novoProcesso->status = 0;
+    novoProcesso->fazIO = rand() % (90 - 4 + 1) + 1; //par para FazIO impar para NaoFazerIo
+    novoProcesso->contadorDeTempoAtivoEmIO = 0;
+    novoProcesso->tipoDeIo = 0;
+    
+    if(novoProcesso->fazIO % 2 == 0)
+    {
+        novoProcesso->tempoDeServicoDeIO = rand() % (5 - 1 + 1) + 1;
+        novoProcesso->tipoDeIo = rand() % (4 - 0);
+    }
+    else{
+        novoProcesso->tempoDeServicoDeIO = 0;
+         novoProcesso->tipoDeIo = 0;
+    }
 
     return novoProcesso;
 };
@@ -80,34 +95,10 @@ bool roundRobin(struct Processos *listaDeProcessos[]) {
     int contaProcessosTerminados = 0;
     int contaPrint = 0;
 
-    // itera sobre os processos prontos
-    /*for (int i = 0; i < qtdProcessos; i++) {
-        processoAtual = listaDeProcessos[i];
-
-        if (processoAtual->contadorDeTempoAtivo >= processoAtual->tempoDeServico) continue;
-
-        // adiciona 1 unidade de tempo, até duas, no contador interno do processo
-        for (int j = 0; j < QUANTUM; j++) {
-            processoAtual->contadorDeTempoAtivo++;
-
-            // verifica se atingiu o tempo de serviço. Se sim, incrementa o contador de processos terminados.
-            if (processoAtual->contadorDeTempoAtivo == processoAtual->tempoDeServico) {
-                contaProcessosTerminados++;
-                printf("O processo com o PID %d, acabou com %d unidades de tempo:, sua posição na fila eh %d \n", processoAtual->pid,processoAtual->contadorDeTempoAtivo,i);
-                break;
-            }
-        }
-
-        // sai do loop se todos os processos terminaram
-        if (contaProcessosTerminados == qtdProcessos) break;
-
-        // reseta o contador para repassar pelos programas que ainda não terminaram
-        if (i == qtdProcessos - 1) i = -1;
-    }
-    */
-
     while(contaProcessosTerminados != qtdProcessos){
         for (int i = 0; i < qtdProcessos; i++) {
+        
+        //processo escalonado pela CPU sendo retirado da fila de prontos
         processoAtual = listaDeProcessos[i];
         
 
@@ -130,7 +121,6 @@ bool roundRobin(struct Processos *listaDeProcessos[]) {
         if (i == qtdProcessos - 1) i = -1;
     }
     }
-//saiu [0], saiu[3],saiu[4],saiu[6], saiu[5], saiu[9],saiu[1],saiu[2]
     printf("Contagem dos prints %d\n",contaPrint);
     return true;
 }
