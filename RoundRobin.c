@@ -38,6 +38,15 @@ bool verificaSeEstaVazio(struct Processos *listaDeProcessos[], int tamanho) {
     }
 }
 
+void executaTempoDeIo(struct Processos *processoEmIo)
+{
+    for (int j = 0; j < QUANTUM; j++)
+     {
+        processoEmIo->contadorDeTempoAtivoEmIO++; 
+        if(processoEmIo->contadorDeTempoAtivoEmIO == processoEmIo->tempoDeServicoDeIO) break;               
+    }
+}
+
 void inserirNaPrimeiraPosicaoVazia(struct Processos *listaDeProcessos[], int tamanho, int elemento) {
     bool posicaoVaziaEncontrada = false;
 
@@ -114,14 +123,12 @@ bool roundRobin(struct Processos *listaDeProcessos[]) {
 
     while (contaProcessosTerminados != qtdProcessos && contaProcessosEmIo == 0 && contaProcessosEmBaixaPrioridade == 0) {
         for (int i = 0; i < qtdProcessos; i++) {
-            //por causa dessa MERDA de ponteiros, o array é criado já cheio de lixo dentro...
+            
             if (verificaSeEstaVazio(listaDeIO, qtdProcessos)) {
                 processoAtual = listaDeProcessos[i];
             } else {
                 processoAtual = listaDeIO[0];
-            }
-
-            //processoAtual = listaDeProcessos[i];
+            }            
             
             if (processoAtual->tempoDeServicoDeIO != 0 && processoAtual->contadorDeTempoAtivoEmIO == 0)
             {
@@ -135,6 +142,9 @@ bool roundRobin(struct Processos *listaDeProcessos[]) {
             {
                 printf("executando IO do processo\n");
                 processoEmIo = listaDeIO[0];
+
+                executaTempoDeIo(processoEmIo);
+                
                 if(processoEmIo->contadorDeTempoAtivoEmIO == processoEmIo->tempoDeServicoDeIO)
                 {
                     switch (processoEmIo->tipoDeIo)
@@ -155,7 +165,7 @@ bool roundRobin(struct Processos *listaDeProcessos[]) {
                         inserirNaPrimeiraPosicaoVazia(listaDeProcessos,qtdProcessos,processoEmIo);                                                
                         break;
 
-                    case 3: //esse aqui precisa ir para uma fila  de baixa prioridade... mudar esse codigo
+                    case 3: //esse aqui precisa ir para uma fila  de baixa prioridade que deve rodar depois de todos os da fila de alta... mudar esse codigo
                         printf("processo de IO do Processo %d terminou.\n", processoEmIo->pid);
                         processoEmIo->fazIO = 0;
                         removerElemento(listaDeIO,qtdProcessos,0);
@@ -168,7 +178,7 @@ bool roundRobin(struct Processos *listaDeProcessos[]) {
                     }
                 }
             }
-            //faltou o método de fazer I/O.. puts...
+            
             if (processoAtual->fazIO == 1) continue;
 
             if (processoAtual->contadorDeTempoAtivo >= processoAtual->tempoDeServico) continue;
